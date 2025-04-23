@@ -1,6 +1,21 @@
 from playwright.sync_api import sync_playwright
 import re
 
+def find_start_and_end_info(expression: str, grid: str, word: str, step: int, width: int) -> str:
+    match = re.search(expression, grid)
+
+    if match.group(1):
+        start_index = match.start(1)
+        end_index = start_index + (len(word) - 1) * step
+    else:
+        end_index = match.start(2)
+        start_index = end_index + (len(word) - 1) * step
+
+    start_coords = (start_index // width, start_index % width)
+    end_coords = (end_index // width, end_index % width)
+
+    print(f"{word} found! Going from {start_coords} to {end_coords}.")
+
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=False)
     page = browser.new_page()
@@ -40,52 +55,45 @@ with sync_playwright() as p:
     grid = "".join(lines)
     width = int(len(grid) ** (1/2))
 
-    horizontal_count = 0
-    vertical_count = 0
-    diagonal_count = 0
+    dir_map = {
+        "h": 1,
+        "v": width,
+        "ddr": width + 1,
+        "ddl": width - 1
+    }
 
-    # Create horizontal expressions
+    h_count = 0
+    v_count = 0
+    d_count = 0
+
+    # Create expressions
     for word in words:
-        h_reverse = word[::-1]
-        horizontal_exp = f"(?={word}|{h_reverse})"
-        h_match = re.findall(horizontal_exp, grid)
-        if h_match:
-            horizontal_count += 1
-            print(word)
+        # Horizontal
+        h_exp = f"({word})|({word[::-1]})"
+        h_match = re.findall(h_exp, grid)
+        if re.search(h_exp, grid):
+            h_count += 1
+            find_start_and_end_info(h_exp, grid, word, dir_map["h"], width)
 
-    print("\n")
+        # Vertical
+        v_f = f".{{{width-1}}}".join(word)
+        v_r = f".{{{width-1}}}".join(word[::-1])
+        v_exp = f"({v_f})|({v_r})"
+        if re.search(v_exp, grid):
+            v_count += 1
+            find_start_and_end_info(v_exp, grid, word, dir_map["v"], width)
 
-    # Create vertical expressions
-    for word in words:
-        v_forward = f".{{{width-1}}}".join(word)
-        v_reverse = f".{{{width-1}}}".join(word[::-1])
-        vertical_exp = f"(?={v_forward}|{v_reverse})"
-        v_match = re.findall(vertical_exp, grid)
-        if v_match:
-            vertical_count += 1
-            print(word)
-
-    print("\n")
-
-    # Create diagonal expressions
-    for word in words:
+        # Diagonals
         for n in [0, -2]:
-            d_down = f".{{{width+n}}}".join(word)
-            d_down_reverse = f".{{{width+n}}}".join(word[::-1])
-            diagonal_expression = f"(?={d_down}|{d_down_reverse})"
-            d_match = re.findall(diagonal_expression, grid)
-            if d_match:
-                diagonal_count += 1
-                print(word)
-                
-    print("\n")
-
-    # Check simple (horizontal/vertical) match count
-    print(f"Horizontal matches: {horizontal_count} of {word_count}")
-    print(f"Vertical matches: {vertical_count} of {word_count}")
-    print(f"Total simple matches: {horizontal_count + vertical_count}, {int(((horizontal_count + vertical_count)/word_count)*100)}%")
-    print(f"\nDiagonal matches: {diagonal_count}")
-    print(f"Total words found: {horizontal_count + vertical_count + diagonal_count}")
+            d_f = f".{{{width+n}}}".join(word)
+            d_r = f".{{{width+n}}}".join(word[::-1])
+            d_exp = f"({d_f})|({d_r})"
+            if re.search(d_exp, grid):
+                d_count += 1
+                find_start_and_end_info(d_exp, grid, word, dir_map["ddr" if n == 0 else "ddl"], width)
+    
+    print(f"Horizontal: {h_count}\nVertical: {v_count}\nDiagonal: {d_count}")
+    print(f"Total words found: {h_count + v_count + d_count}")
 
     # row_dict = {}
 
