@@ -43,18 +43,13 @@ with sync_playwright() as p:
         word_elements = page.locator("#words .word.word-en.word-1")
 
         words = []
-
         for i in range(word_elements.count()):
             words.append(word_elements.nth(i).inner_text())
 
-        word_count = len(words)
-
         grid_element = page.locator("#wordsearchGrid")
-
         rows = grid_element.locator('div[class="row row11"]')
 
         lines = []
-
         for t in range(rows.count()):
             lines.append(rows.nth(t).inner_text().replace("\n", ""))
 
