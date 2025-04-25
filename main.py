@@ -106,8 +106,8 @@ with sync_playwright() as p:
             new_game_button.wait_for(state="attached")
             new_game_button.click()
 
-            meta_close_button = page.locator("#metaClose")
-            if meta_close_button.is_visible() and meta_close_button.is_enabled():
+            meta_close_button = page.locator("#metaPanel").locator("#metaClose")
+            if meta_close_button.is_visible():
                 meta_close_button.click()
 
             if new_medium_game_button:
