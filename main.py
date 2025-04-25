@@ -2,7 +2,7 @@ from playwright.sync_api import sync_playwright
 from datetime import datetime as dt
 import re
 
-def find_start_and_end_info(expression: str, grid: str, word: str, step: int, width: int) -> str:
+def find_start_and_end_info(expression: str, grid: str, word: str, step: int) -> tuple:
     match = re.search(expression, grid)
 
     if match.group(1):
@@ -15,7 +15,6 @@ def find_start_and_end_info(expression: str, grid: str, word: str, step: int, wi
     start_coords = (start_index // width, start_index % width)
     end_coords = (end_index // width, end_index % width)
 
-    # print(f"{word} found! Going from {start_coords} to {end_coords}.")
     return start_coords, end_coords
 
 def find_page_elements_and_drag(start_coords: tuple, end_coords: tuple) -> None:
@@ -37,68 +36,57 @@ with sync_playwright() as p:
     new_medium_game_button = page.locator("#newGameMedium")
     new_medium_game_button.click()
 
+    timestamp = dt.now().strftime("%Y-%m-%d_%H-%M-%S")
+
     for puzzle in range(puzzle_n):
-        print(f"Starting puzzle {puzzle+1}...\n")
+        print(f"Starting puzzle {puzzle+1}...")
 
         word_elements = page.locator("#words .word.word-en.word-1")
-
-        words = []
-        for i in range(word_elements.count()):
-            words.append(word_elements.nth(i).inner_text())
+        word_count = word_elements.count()
+        words = [word_elements.nth(i).inner_text() for i in range(word_count)]
 
         grid_element = page.locator("#wordsearchGrid")
         rows = grid_element.locator('div[class="row row11"]')
-
-        lines = []
-        for t in range(rows.count()):
-            lines.append(rows.nth(t).inner_text().replace("\n", ""))
+        row_count = rows.count()
+        lines = [rows.nth(t).inner_text().replace("\n", "") for t in range(row_count)]
 
         # Create grid as string and find width
         grid = "".join(lines)
         width = int(len(grid) ** (1/2))
 
-        dir_map = {
-            "h": 1,
-            "v": width,
-            "ddr": width + 1,
-            "ddl": width - 1
+        dir_config = {
+            "Horizontal": {
+                "step": 1,
+                "expression": lambda word, width: f"({word})|({word[::-1]})",
+            },
+            "Vertical": {
+                "step": width,
+                "expression": lambda word, width: "("+f".{{{width-1}}}".join(word)+")|("+f".{{{width-1}}}".join(word[::-1])+")"
+            },
+            "Diagonal down right": {
+                "step": width + 1,
+                "expression": lambda word, width: "("+f".{{{width}}}".join(word)+")|("+f".{{{width}}}".join(word[::-1])+")"
+            },
+            "Diagonal down left": {
+                "step": width - 1,
+                "expression": lambda word, width: "("+f".{{{width-2}}}".join(word)+")|("+f".{{{width-2}}}".join(word[::-1])+")"
+            },
         }
 
-        h_count = 0
-        v_count = 0
-        d_count = 0
+        direction_counts = {k: 0 for k in dir_config}
 
-        # Create expressions
         for word in words:
-            # Horizontal
-            h_exp = f"({word})|({word[::-1]})"
-            h_match = re.findall(h_exp, grid)
-            if re.search(h_exp, grid):
-                h_count += 1
-                start_coords, end_coords = find_start_and_end_info(h_exp, grid, word, dir_map["h"], width)
+            for dir, config in dir_config.items():
+                expression = config["expression"](word, width)
+                match = re.search(expression, grid)
+                if match:
+                    direction_counts[dir] += 1
+                    step = config["step"]
+                    start_coords, end_coords = find_start_and_end_info(expression, grid, word, step)
+                    find_page_elements_and_drag(start_coords, end_coords)
+                    break
 
-            # Vertical
-            v_f = f".{{{width-1}}}".join(word)
-            v_r = f".{{{width-1}}}".join(word[::-1])
-            v_exp = f"({v_f})|({v_r})"
-            if re.search(v_exp, grid):
-                v_count += 1
-                start_coords, end_coords = find_start_and_end_info(v_exp, grid, word, dir_map["v"], width)
-
-            # Diagonals
-            for n in [0, -2]:
-                d_f = f".{{{width+n}}}".join(word)
-                d_r = f".{{{width+n}}}".join(word[::-1])
-                d_exp = f"({d_f})|({d_r})"
-                if re.search(d_exp, grid):
-                    d_count += 1
-                    start_coords, end_coords = find_start_and_end_info(d_exp, grid, word, dir_map["ddr" if n == 0 else "ddl"], width)
-
-            find_page_elements_and_drag(start_coords, end_coords)
-
-        print(f"Horizontal: {h_count}\nVertical: {v_count}\nDiagonal: {d_count}\n")
-
-        timestamp = dt.now().strftime("%Y-%m-%d_%H-%M-%S")
+        print("\n".join(f"{direction}: {count}" for direction, count in direction_counts.items()))
 
         grid_area = grid_element.bounding_box()
         word_area = page.locator("#words").bounding_box()
@@ -107,10 +95,10 @@ with sync_playwright() as p:
         y = min(grid_area["y"], word_area["y"]) - 100
         right = max(grid_area["x"] + grid_area["width"], word_area["x"] + word_area["width"])
         bottom = max(grid_area["y"] + grid_area["height"], word_area["y"] + word_area["height"])
-        width = right - x
-        height = bottom - y
+        screenshot_width = right - x
+        screenshot_height = bottom - y
 
-        page.screenshot(path=f"solves/solve_{timestamp}.png", clip={"x": x, "y": y, "width": width+10, "height": height})
+        page.screenshot(path=f"solves/{timestamp}_puzzle{puzzle+1}.png", clip={"x": x, "y": y, "width": screenshot_width+10, "height": screenshot_height})
 
         print(f"Completed and screenshotted puzzle {puzzle+1} of {puzzle_n}!\n")
 
@@ -122,7 +110,6 @@ with sync_playwright() as p:
             meta_close_button = page.locator("#metaClose")
             if meta_close_button.is_visible() and meta_close_button.is_enabled():
                 meta_close_button.click()
-                page.locator("#metaClose").click()
 
             if new_medium_game_button:
                 new_medium_game_button.click()
