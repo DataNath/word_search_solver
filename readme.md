@@ -222,6 +222,12 @@ Great! You can simply follow these steps:
 git clone https://github.com/DataNath/word_search_solver.git
 ```
 
+<h3>2. Move into the new directory</h3>
+
+```shell
+cd word_search_solver
+```
+
 <h3>3. Create a virtual environment (optional)</h3>
 
 ```shell
