@@ -177,7 +177,7 @@ This is then used in our overall messaging which looks like so:
 <summary><strong style="font size 24px;";>Creating screenshots</strong></summary>
 
 >
-One of the many cool things about Playwright is the ability to screenshot pages. As standard, we can take a snap of certain elements, or the whole page. However, to keep things neet and refined (just the grid and word list), we can also use the 'clip' kwarg to pass in a dynamic area. To do this we find the minimum x and y coordinate of the two elements' bounding box i.e. the top-left most point. From there we can simply define a width and heigh from this point. I added some manual adjustments just for tidiness and preference! Screenshots are then output to a `solves/` directory relative to `main.py`:
+One of the many cool things about Playwright is the ability to screenshot pages. As standard, we can take a snap of certain elements, or the whole page. However, to keep things neat and refined (just the grid and word list), we can also use the 'clip' kwarg to pass in a dynamic area. To do this we find the minimum x and y coordinate of the two elements' bounding box i.e. the top-left most point. From there we can simply define a width and height from this point. I added some manual adjustments just for tidiness and preference! Screenshots are then output to a `solves/` directory relative to `main.py`:
 
 ```python
         x = min(grid_area["x"], word_area["x"]) - 25
@@ -205,8 +205,8 @@ Whilst testing, I noticed that often a pop-up trying to point users towards the 
             new_game_button.wait_for(state="attached")
             new_game_button.click()
 
-            meta_close_button = page.locator("#metaClose")
-            if meta_close_button.is_visible() and meta_close_button.is_enabled():
+            meta_close_button = page.locator("#metaPanel").locator("#metaClose")
+            if meta_close_button.is_visible():
                 meta_close_button.click()
 
             if new_medium_game_button:
