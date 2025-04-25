@@ -12,6 +12,8 @@ Email: Nathan@databasyx.com
 
 This is simply a fun project I wanted to have a go at recently - automating word search completion using Python. The build uses [Playwright](https://playwright.dev/python/) to conduct browser automation on [Razzle Puzzles](https://api.razzlepuzzles.com/wordsearch).
 
+![Demo gif](.docs/demo.gif)
+
 <h2>Key steps</h2>
 
 <details>
