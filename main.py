@@ -50,7 +50,6 @@ with sync_playwright() as p:
         row_count = rows.count()
         lines = [rows.nth(t).inner_text().replace("\n", "") for t in range(row_count)]
 
-        # Create grid as string and find width
         grid = "".join(lines)
         width = int(len(grid) ** (1/2))
 
