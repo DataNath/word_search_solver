@@ -1,4 +1,4 @@
-<h1>NotebookLM source automation</h1>
+<h1>Word search solver</h1>
 <a id="readme-top"></a>
 
 Produced by Nathan Purvis - [Databasyx](https://www.databasyx.com/) co-founder | Data Engineer @ [The Information Lab](https://www.theinformationlab.co.uk/)
